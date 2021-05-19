@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html>
+
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title> IOT PROJECT</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" type="text/css" media="screen" href="style.css"> 
+        <link rel="stylesheet" type="text/css" media="screen" href="bootstrap.min.css">
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+        <script src="//code.jquery.com/jquery-3.2.1.js"></script>
+        <script src="/socket.io/socket.io.js"></script>
+        <script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+        <script src="Chart.min.js"></script>
+        <script src="utils.js"></script>
+
+        <style>
+            canvas{
+                -moz-user-select: none;
+                -webkit-user-select: none;
+                -ms-user-select: none;
+            }
+        </style>
+
+        <script>
+            var socket = io.connect();
+        </script>
+    </head>
+
+        
+<body style="">
+
+<div id="div-body_status">
+    <div class="header">
+        <h5></h5>
+    </div>
+    
+    <div class="class-status_layout">
+        <div class="class-status_frame" id="div-status_temperature">
+            <b>Temperature</b><br>
+            <b id="data-temp"></b>
+        </div>
+    </div>
+    <div class="class-status_layout">
+        <div class="class-status_frame" id="div-status_humidity">
+            <b>Humidity</b><br>
+            <b id="data-humi"></b>
+        </div>
+    </div>
+    <div class="class-status_layout">
+        <div class="class-status_frame" id="div-status_light">
+            <b>Light</b><br>
+            <b id="data-light"></b>
+        </div>
+    </div>
+</div>
+
+
+
+
+<script>
+    function updateStatusValue(data_id, data_value, symbol) {
+        document.getElementById(data_id).innerHTML = data_value + symbol;
+    }
+    function updateStatusFrame(frame_id, color_low, color_medium, color_high, value, value_medium, value_high) {
+        if (value >= value_high)
+            $(frame_id).css("background-color", color_high);
+        else if (value >= value_medium)
+            $(frame_id).css("background-color", color_medium);
+        else
+            $(frame_id).css("background-color", color_low);
+    }
+
+    var temp = document.getElementById('data-temp');
+    var humi = document.getElementById('data-humi');
+    var light = document.getElementById('data-light');
+
+    socket.on("status", function (data) {
+        //updateChart(data);
+        var dataStatus = JSON.parse(data) 
+        temp = dataStatus.temp;
+        humi = dataStatus.humi;
+        light = dataStatus.light;
+        time = dataStatus.time;
+        
+        // console.log(dataStatus.temp, dataStatus.humi, dataStatus.light);
+        updateStatusValue('data-temp', temp, "°");
+        updateStatusValue('data-humi', humi, "%");
+        updateStatusValue('data-light', light, "%");
+        // $('#div-status_temperature').css("background-color", "red");
+        updateStatusFrame('#div-status_temperature', "blue", "green", "red", temp, 20, 30);
+        updateStatusFrame('#div-status_humidity', "red", "green", "blue", humi, 50, 90);
+        updateStatusFrame('#div-status_light', "dimgrey", "green", "gold", light, 30, 80);
+        updateChart(data);
+    });
+ 
+</script>
+
+
+<div id="div-body_chart">
+    <div class="class-control_frame" >
+        <h3>Line Chart</h3>
+    </div>
+    
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="panel panel-default">
+
+                    <div class="panel-body">
+                        <div style="width: 100%;">
+                            <canvas id="canvas"></canvas>
+                        </div>
+                        <!-- <canvas id="line-chart"></canvas> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script type="text/javascript">
+    var lineChart = document.getElementById('canvas').getContext('2d');
+    var myChart = new Chart(lineChart, {
+        type: 'line',
+        data: {
+            labels: new Array(10),
+                datasets: [
+                    {
+                        label: 'Temperature',
+					    fill: true,
+					    backgroundColor: window.chartColors.blue,
+					    borderColor: window.chartColors.blue,
+					    data: new Array(10),
+                    },
+                    {
+                        label: 'Humidity',
+					    fill: true,
+					    backgroundColor: window.chartColors.yellow,
+					    borderColor: window.chartColors.yellow,
+					    borderDash: [5, 5],
+					    data: new Array(10),
+                    },
+                    {
+                        label: 'Light',
+					    backgroundColor: window.chartColors.green,
+					    borderColor: window.chartColors.green,
+					    data: new Array(10),
+                        fill: true,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+				title: {
+					display: true,
+					text: 'Status Bedroom LineChart'
+				},
+				tooltips: {
+					mode: 'index',
+					intersect: false,
+				},
+				hover: {
+					mode: 'nearest',
+					intersect: true
+				},
+				scales: {
+					xAxes: [{
+						display: true,
+						scaleLabel: {
+							display: true,
+							labelString: 'Second'
+						}
+					}],
+					yAxes: [{
+						display: true,
+						scaleLabel: {
+							display: true,
+							labelString: 'Value'
+						}
+					}]
+				}
+            }
+        });
+        function updateChart(data) {
+                var dataTemp =  myChart.data.datasets[0].data;
+                var dataHumi =  myChart.data.datasets[1].data;
+                var dataLight = myChart.data.datasets[2].data;
+                var dataTime = myChart.data.labels;
+                for (i = 0; i < 10-1; i++) {
+                    dataTemp[i] = dataTemp[i + 1];
+                    dataHumi[i] = dataHumi[i + 1];
+                    dataLight[i] = dataLight[i + 1];
+                    dataTime[i] = dataTime[i+1];
+                }
+
+                var dataStatus = JSON.parse(data)
+                dataTemp[10-1] = dataStatus.temp;
+                dataHumi[10-1] = dataStatus.humi;
+                dataLight[10-1] = dataStatus.light;
+                dataTime[10-1] = new Date(dataStatus.time.toString()).toLocaleString('en-US', {hour12: false});
+
+                myChart.data.datasets[0].data = dataTemp;
+                myChart.data.datasets[1].data = dataHumi;
+                myChart.data.datasets[2].data = dataLight;
+                myChart.data.labels = dataTime;
+                myChart.update();
+            }
+
+</script>
+
+
+<div id="div-body_control" style="">
+    <div class="class-control_frame" >
+        <h3>Control</h3>
+    </div>
+
+    <div class="vodung"> </div>
+
+    <div class="class-control" id="div-control-button" style="">
+        <div class="class-control-button_layout">
+            <img id="button-led1" src="icon/light_off.png" width="50" alt="button" onclick="onClickImage(this.id);">
+            <div class="class-control-button-name">
+                <b>LED 1</b>
+            </div>
+        </div>
+        <div class="class-control-button_layout">
+            <img id="button-led2" src="icon/light_off.png" width="50" alt="button" onclick="onClickImage(this.id);">
+            <div class="class-control-button-name">
+                <b>LED 2</b>
+            </div>
+        </div>
+        <div class="class-control-button_layout">
+            <img id="button-led3" src="icon/light_off.png" width="50" alt="button" onclick="onClickImage(this.id);">
+            <div class="class-control-button-name">
+                <b>LED 3</b>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scipt ctr led -->
+    <script>
+        var led1 = led2 = led3 = 0;
+        var data = {
+            button: 1,
+            value: 0
+        };
+        //ask status when web open
+        var topic = 'button';
+        sendButtonEmit("button-led1", -1);
+
+        function changeImage(button_id, type) {
+            switch (type) {
+                case 0: document.getElementById(button_id).src = 'icon/light_off.png';
+                    break;
+                case 1: document.getElementById(button_id).src = 'icon/light_on.png';
+                    break;
+                case 2: document.getElementById(button_id).src = 'icon/light_off.png';
+                    break;
+                case 3: document.getElementById(button_id).src = 'icon/light_on.png';
+                    break;
+            }
+        }
+        function changeStatus(button_id, feedback = -1) {
+            switch (button_id) { 
+                case "button-led1": led1 = feedback == -1 ? buttonClicked(button_id, led1) : feedback;
+                    break;
+                case "button-led2": led2 = feedback == -1 ? buttonClicked(button_id, led2) : feedback;
+                    break;
+                case "button-led3": led3 = feedback == -1 ? buttonClicked(button_id, led3) : feedback;
+                    break;
+            }
+        }
+        function onClickImage(button_id) {
+            changeStatus(button_id);
+        }
+        /*
+         * action when button have clicked
+         * ledStatus = 0 -> turn off and active on device
+         * ledStatus = 1 -> turn on and active on device
+         * ledStatus = 2 -> turn off but inactive on device
+         * ledStatus = 3 -> turn on but inactive on device
+         */
+        function buttonClicked(button_id, ledStatus) {
+            if (ledStatus == 3 || ledStatus == 1)
+                ledStatus = 2;
+            else
+                ledStatus = 3;
+            sendButtonEmit(button_id, ledStatus);
+            changeImage(button_id, ledStatus);
+            return ledStatus;
+        }
+        function sendButtonEmit(button_id, ledStatus) {
+            data.button = button_id;
+            data.value = ledStatus;
+            socket.emit(topic, data);
+        }
+        /*
+         * feedback from device
+         * 0 : off active
+         * 1 : on active
+         */
+        socket.on('button', function (message) {
+            data  = JSON.parse(message);
+            changeImage(data.button, data.value);
+            changeStatus(data.button, data.value);
+        });
+    </script>
+
+    <div class="vodung"> </div>
+
+    <div class="class-control" id="div-control-slider" style="">
+        <div class="slidecontainer">
+            <input type="range" min="1" max="100" value="50" class="slider" id="control-slider">
+            <p> Buzzer: <span id="demo"></span></p>
+        </div>
+    </div>
+    <script>
+        var slider = document.getElementById("control-slider");
+        var output = document.getElementById("demo");
+        output.innerHTML = slider.value;
+            slider.oninput = function input(){
+                socket.emit('buzzer',this.value);
+                output.innerHTML = this.value;
+            }
+    </script>
+    <div class="vodung"> </div>
+    
+</div>
+</body>
+</html>
